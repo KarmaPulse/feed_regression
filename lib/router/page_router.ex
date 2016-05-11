@@ -4,7 +4,21 @@ defmodule FeedRegression.Router.Page do
   namespace :pages do
     route_param :page_id do
       get do
-        json(conn, %{ hello: "#{params[:page_id]}" })
+        info = conn
+          |> FeedRegression.PagesController.page_info(params[:page_id])
+
+        conn
+          |> json(info)
+      end
+
+      namespace :posts do
+        get do
+          posts = conn
+            |> FeedRegression.PagesController.page_posts(params[:page_id])
+
+          conn
+            |> json(posts)
+        end
       end
     end
   end
