@@ -10,6 +10,16 @@ defmodule FeedRegression.Router.Page do
         conn
           |> json(info)
       end
+
+      namespace :posts do
+        get do
+          posts = conn
+            |> FeedRegression.PagesController.page_posts(params[:page_id])
+
+          conn
+            |> json(posts)
+        end
+      end
     end
   end
 end
