@@ -5,7 +5,7 @@ defmodule FeedRegression.API do
 
   rescue_from :all do
     conn
-      |> put_status(500)
-      |> text("Server Error")
+      |> put_status(404)
+      |> text("Resource not found")
   end
 end
