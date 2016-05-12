@@ -2,7 +2,7 @@
 # and its dependencies with the aid of the Mix.Config module.
 use Mix.Config
 
-config :maru, FeedRegression.API, http: [port: { :system, "8880" }]
+config :maru, FeedRegression.API, http: [port: 8880]
 
 # This configuration is loaded before any dependency and is restricted
 # to this project. If another project depends on this project, this
