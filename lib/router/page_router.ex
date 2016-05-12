@@ -26,7 +26,7 @@ defmodule FeedRegression.Router.Page do
 
         get do
           posts = conn
-            |> FeedRegression.PagesController.page_posts(params[:page_id])
+            |> FeedRegression.PagesController.page_posts_with_statistics(params[:page_id])
 
           conn
             |> json(posts)

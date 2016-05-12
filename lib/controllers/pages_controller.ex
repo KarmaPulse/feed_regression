@@ -20,41 +20,38 @@ defmodule FeedRegression.PagesController do
       response = Facebook.pageFeed(:posts,
           page_id,
           access_token,
-          100,
-          "id,message,link")
+          10,
+          "id,message,link,created_time")
 
       response["data"]
   end
 
+  @doc """
+  Gets the posts of a Facebook page and add the statistics for each post.
+  Statistics stands for the number of likes, comments and reactions a post has.
+  """
+  def page_posts_with_statistics(conn, page_id) do
+    page_posts(conn, page_id)
+      |> Enum.map(fn (post) -> add_post_statistics(conn, post) end)
+  end
+
+  def add_post_statistics(conn, post) do
+    post_id = post["id"]
+    statistics = post_statistics(conn, post_id)
+
+    Map.put post, :statistics, statistics
+  end
+
+  @doc """
+  Gets the statistics of a given post.
+  Statistics stands for the number of likes, comments and reactions a post has.
+  """
   def post_statistics(conn, post_id) do
     { :ok, access_token } = facebook_access_token(conn)
 
-    comments = fn map ->
-        IO.inspect map
-
-      count = Facebook.objectCount(:comments, post_id, access_token)
-
-      Map.put map, :comments, count
-    end
-
-    likes = fn map ->
-        IO.inspect map
-
-      count = Facebook.objectCount(:likes, post_id, access_token)
-
-      Map.put map, :likes, count
-    end
-
-    wows = fn map ->
-        IO.inspect map
-
-      count = Facebook.objectCount(:reaction, :wow, post_id, access_token)
-
-      Map.put map, :wow, count
-    end
-
-    comments.(%{})
-      |> likes.()
+    %{}
+      |> count_reaction(:likes, post_id, access_token)
+      |> count_reaction(:comments, post_id, access_token)
       |> count_reaction(:wow, post_id, access_token)
       |> count_reaction(:haha, post_id, access_token)
       |> count_reaction(:sad, post_id, access_token)
@@ -63,18 +60,17 @@ defmodule FeedRegression.PagesController do
       |> count_reaction(:love, post_id, access_token)
   end
 
+  @doc """
+  Gets the count of a given reaction of a post.
+  """
   def count_reaction(map, reaction, post_id, access_token) when is_atom(reaction)  do
-    count = Facebook.objectCount(:reaction, reaction, post_id, access_token)
+    count = case reaction do
+      :likes -> Facebook.objectCount(:likes, post_id, access_token)
+      :comments -> Facebook.objectCount(:comments, post_id, access_token)
+      _ -> Facebook.objectCount(:reaction, reaction, post_id, access_token)
+    end
 
     Map.put(map, reaction, count)
-  end
-
-  def statistics_map(statistic, map, scope) do
-    case scope do
-      :comments -> %{ map | :comments => statistic }
-      :likes -> %{ map | :likes => statistic }
-      _ -> map
-    end
   end
 
   # Gets the 'access_token' header from the request headers in the connection.
