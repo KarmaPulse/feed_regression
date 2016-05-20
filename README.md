@@ -14,6 +14,15 @@ Este proyecto pretende analizar el feed de una *Facebook Page*. Este análisis i
 	* [pageFeed/5](#pageFeed/5)
 	* [objectCount/3](#objectcount/3)
 	* [objectCount/4](#objectcount/)
+* [La API](#la-api)
+	* [Estructura del proyecto](#estructura-del-proyecto)
+	* [Endpoints](#endpoints)
+	* [Obtención de los posts con métricas](#obtención-de-los-posts-con-métricas)
+	* [Rate limiting](#rate-limiting)
+* [Resultados](#resultados)
+	* [Información de la página](#información-de-la-página)
+	* [Posts con métricas](#posts-con-métricas)
+* [Conclusiones](#conclusiones)
 
 
 ## Antecedentes
@@ -47,21 +56,27 @@ Obtiene el feed de la *Facebook Page*, considerando que existen cuatro tipos de 
 * **tagged**. Posts en los que fue mencionada la página.
 * **promotable**. Constituido por los posts que pueden ser promovidos (*sponsored*) por el administrador de la página.
 
+<br/>
 ![pageFeed](img/pageFeed.png)
+<br/>
 
 ### objectCount/3
 
 [Documentación](https://hexdocs.pm/facebook/Facebook.html#objectCount/3).
 Proporciona el número de likes o comentarios que tiene un post.
 
+<br/>
 ![pageFeed](img/objectCount3.png)
+<br/>
 
 ### objectCount/4
 
 [Documentación](https://hexdocs.pm/facebook/Facebook.html#objectCount/4).
 Proporciona el número de las personas que reaccionaron al post. Para ello se debe especificar el tipo de reacción que se desea calcular: haha, love, angry, etc.
 
+<br/>
 ![pageFeed](img/objectCount4.png)
+<br/>
 
 ## La API
 
@@ -69,33 +84,96 @@ Proporciona el número de las personas que reaccionaron al post. Para ello se de
 
 Debido al lenguaje de programación Elixir para la API, el proyecto cuenta con la siguiente estructura:
 
-> ├── config
-> │   └── config.exs
-> ├── deps
-> │   ├── cowboy
-> │   ├── facebook
-> │   ├── hackney
-> │   ├── json
-> │   ├── maru
-> ├── lib
-> │   ├── controllers
-> │   │   └── pages_controller.ex
-> │   ├── feed_regression.ex
-> │   └── router
-> │       └── page_router.ex
-> ├── mix.exs
-> ├── README.md
-> └── test
->     └── test_helper.exs
+    ├── config
+    │   └── config.exs
+    ├── deps
+    │   ├── cowboy
+    │   ├── facebook
+    │   ├── hackney
+    │   ├── json
+    │   ├── maru
+    ├── lib
+    │   ├── controllers
+    │   │   └── pages_controller.ex
+    │   ├── feed_regression.ex
+    │   └── router
+    │       └── page_router.ex
+    ├── mix.exs
+    ├── README.md
+    └── test
+         └── test_helper.exs
 
 Donde:
-* config.exs es el archivo de configuración donde se porporciona información del host y puerto para el servidor de aplicación.
-* mix.exs es donde se define la descripción del proyecto, así como sus dependencias.
-* deps es la carpeta donde se almacenan las dependencias una vez descargadas.
-* lib 
+* **config.exs** es el archivo de configuración donde se porporciona información del host y puerto para el servidor de aplicación.
+* **mix.exs** es donde se define la descripción del proyecto, así como sus dependencias.
+* **deps** es la carpeta donde se almacenan las dependencias una vez descargadas.
+* **lib** contiene el código fuente de la api, por lo que aquí se podrán encontrar los endpoints y controladores.
+* **test** es donde se ubican los archivos de pruebas unitarias y de integración.
+
+### Endpoints
 
 * **/pages/{page-id}**. Obtienes la información de la página.
 * **/pages/{page-id}/posts**. Proporciona el feed (con el tipo posts) de la página junto con las métricas del número de likes, comentarios y reacciones.
+
+### Obtención de los posts con métricas
+
+Para la obtención de los posts de una página, se declaro a *facebook.ex* como dependencia en *mix.exs*. Posteriormente, en el archivo *pages_controlelr.ex* se utiliza dicha librería para la obtención del feed especificando el tipo *posts*.
+
+<br/>
+![pageFeed](img/statistics.png)
+</br>
+
+Cabe mencionar la importancia del encadenamiento de funciones *count_reaction*, donde se está obteniendo el total de cada reacción por post. Esto significa, que por cada post del feed, ==se realizan ocho peticiones a la Graph API== de Facebook.
+
+### Rate limiting
+
+Para hacer uso de la Graph API, es necesaria la creación de una aplicación en Facebook, la cual nos proporciona los niveles de seguridad requeridos para poder consumir información de esta API.
+
+De acuerdo a la [documentación](https://developers.facebook.com/docs/graph-api/advanced/rate-limiting), *cada instalación* de la aplicación, **proporciona 200 llamadas por hora para consumir la API**. Esto quiere decir, que una única instalación tiene un límite de 200 peticiones a la Graph API durante una hora, si se excede este límite, Facebook comienza a bloquear la petición y ninguna instalación será capaz de realizar más peticiones.
+
+## Resultados
+
+Esta sección describe los resultados obtenidos de la API, para ello, se tomará la página de CocaCola México en Facebook para las demostraciones.
+
+### Información de la página
+
+Para el endpoint que obtiene información de la página, tenemos la siguiente petición:
+
+	http://127.0.0.1:8880/pages/CocaColaMx
+
+Obteniendo:
+
+<br/>
+![page_info](img/page_info.png)
+</br>
+
+Se pueden notar tres atributos de esta respuesta: el id de la página, el número de personas que le han dado likes (fanCount) y el 'acerca de'. Cabe mencionar que estos campos fueron especificados programáticamente en la API, por lo que si se requiere de más información, fácilmente pueden ser definidos en el código.
+
+### Posts con métricas
+
+La obtención de los posts se realiza con la siguiente petición:
+
+	http://127.0.0.1:8880/pages/CocaColaMx/posts
+
+Obteniendo una respuesta similar a la siguiente:
+
+<br/>
+![page_info](img/feed.png)
+</br>
+
+Donde:
+
+* **message**. Es el texto que acompaña al post.
+* **link**. El enlace al post.
+* **id**. ID de post.
+* **created_time**. Su fecha de publicación.
+* statistics. Atributo que contiene las métricas del posts, es decir, el número de likes, comentarios y reacciones que tuvo.
+
+## Conclusiones
+
+El consumo de la Graph API requiere de ciertas precauciones, tal como el caso de *rate limting*, para evitar el baneo de la aplicación y se pueda seguir consultando el feed de las páginas.
+
+Con la información proporcionada por la API de este repositorio, se pueden aplicar diversos algoritmos de machine learning, como el *regression*, ya que al obtenerse el feed de fechas pasadas, se puede analizar qué tanto *engagement* ha tenido la página con sus posts y poder observar qué momentos son los oportunos para postear y obtener las mejores métricas posibles.
 
 
 
