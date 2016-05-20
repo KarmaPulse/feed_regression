@@ -123,7 +123,7 @@ Para la obtención de los posts de una página, se declaro a *facebook.ex* como 
 ![pageFeed](img/statistics.png)
 </br>
 
-Cabe mencionar la importancia del encadenamiento de funciones *count_reaction*, donde se está obteniendo el total de cada reacción por post. Esto significa, que por cada post del feed, ==se realizan ocho peticiones a la Graph API== de Facebook.
+Cabe mencionar la importancia del encadenamiento de funciones *count_reaction*, donde se está obteniendo el total de cada reacción por post. Esto significa, que por cada post del feed, **se realizan ocho peticiones a la Graph API** de Facebook.
 
 ### Rate limiting
 
